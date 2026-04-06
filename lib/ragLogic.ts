@@ -112,7 +112,7 @@ export function computeTofu(totalLeads: number, interactions: number): RagResult
 }
 
 export function computeOutcome(interactions: number, apptRate: number | null): RagResult {
-  if (interactions < 10) return { status: 'N/A', value: '—' };
+  if (interactions < 20) return { status: 'N/A', value: '—' };
   if (!apptRate || apptRate === 0) return { status: 'RED', value: '0%' };
   const pct = `${Math.round(apptRate * 100)}%`;
   if (apptRate >= 0.20) return { status: 'GREEN', value: pct };
@@ -121,7 +121,7 @@ export function computeOutcome(interactions: number, apptRate: number | null): R
 }
 
 export function computeQuality(score: number | null, interactions: number): RagResult {
-  if (score === null || interactions === 0) return { status: 'N/A', value: '—' };
+  if (score === null || interactions < 20) return { status: 'N/A', value: '—' };
   const pct = `${Math.round(score)}%`;
   if (score >= 70) return { status: 'GREEN', value: pct };
   if (score >= 50) return { status: 'AMBER', value: pct };
@@ -150,6 +150,11 @@ export function computeAccountRag(
 }
 
 export function scoreRooftop(r: Rooftop): RooftopScored {
+  // Not enough data to score anything
+  if (r.totalLeads < 20 || r.viniInteractions < 20) {
+    const na: RagResult = { status: 'N/A', value: '—' };
+    return { ...r, captureRate: null, tofu: na, outcome: na, quality: na, accountRag: 'N/A', hasAnyRed: false };
+  }
   const captureRate = r.totalLeads >= 20 ? r.viniInteractions / r.totalLeads : null;
   const tofu = computeTofu(r.totalLeads, r.viniInteractions);
   const outcome = computeOutcome(r.viniInteractions, r.apptRate);
