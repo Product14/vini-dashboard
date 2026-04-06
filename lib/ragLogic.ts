@@ -151,7 +151,7 @@ export function computeAccountRag(
 
 export function scoreRooftop(r: Rooftop): RooftopScored {
   // Not enough data to score anything
-  if (r.totalLeads < 20 || r.viniInteractions < 20) {
+  if (r.totalLeads < 20) {
     const na: RagResult = { status: 'N/A', value: '—' };
     return { ...r, captureRate: null, tofu: na, outcome: na, quality: na, accountRag: 'N/A', hasAnyRed: false };
   }
