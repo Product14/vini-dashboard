@@ -75,13 +75,13 @@ function RooftopCard({ r }: { r: RooftopScored }) {
         </div>
         <div className="flex flex-wrap gap-2.5 mt-3">
           {([
-            { label: 'TOFU',    status: r.tofu.status,    value: r.tofu.value    },
-            { label: 'Quality', status: r.quality.status, value: r.quality.value },
-            { label: 'ROI',     status: r.outcome.status, value: r.outcome.value },
-          ] as const).map(({ label, status, value }) => (
+            { label: 'TOFU',    status: r.tofu.status    },
+            { label: 'Quality', status: r.quality.status },
+            { label: 'ROI',     status: r.outcome.status },
+          ] as const).map(({ label, status }) => (
             <div key={label} className="flex flex-col items-start gap-0.5">
               <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">{label}</span>
-              <RagBadge status={status} value={value} size="sm" />
+              <RagBadge status={status} size="sm" />
             </div>
           ))}
         </div>
