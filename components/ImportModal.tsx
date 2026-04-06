@@ -188,7 +188,7 @@ export default function ImportModal({ onImport, onClose }: Props) {
           <p className="text-xs font-medium text-slate-500 mb-2">Expected columns</p>
           <div className="flex flex-wrap gap-1.5">
             {[
-              'enterprise_name', 'rooftop_name', 'Agent Type', 'total_leads',
+              'team_id', 'enterprise_name', 'rooftop_name', 'Agent Type', 'total_leads',
               'total_leads_interacted_with_vini', 'total_appointments',
               'appointment_booking_rate', 'avg_score_percentage',
             ].map((col) => (

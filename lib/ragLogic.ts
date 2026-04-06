@@ -6,6 +6,7 @@ export interface RagResult {
 }
 
 export interface Rooftop {
+  teamId: string | null;
   enterpriseName: string;
   rooftopName: string;
   agentType: string;
@@ -17,6 +18,37 @@ export interface Rooftop {
   apptRate: number | null;
   avgScore: number | null;
 }
+
+export function rooftopKey(r: Pick<Rooftop, 'teamId' | 'enterpriseName' | 'rooftopName'>): string {
+  return r.teamId ?? `${r.enterpriseName}::${r.rooftopName}`;
+}
+
+export type DeploymentStatus = 'Live' | 'In Progress' | 'Approval' | 'Declined' | 'Not Live' | null;
+
+export interface SalesInboundStatuses {
+  smartView:  DeploymentStatus;
+  stl:        DeploymentStatus;
+  afterHours: DeploymentStatus;
+  overflow:   DeploymentStatus;
+  fullDay:    DeploymentStatus;
+  followup14: DeploymentStatus;
+  daily:      DeploymentStatus;
+  weekly:     DeploymentStatus;
+  monthly:    DeploymentStatus;
+}
+
+export const EMPTY_SALES_INBOUND_STATUSES: SalesInboundStatuses = {
+  smartView: null, stl: null, afterHours: null, overflow: null,
+  fullDay: null, followup14: null, daily: null, weekly: null, monthly: null,
+};
+
+export const DEPLOYMENT_STATUS_OPTIONS: { value: Exclude<DeploymentStatus, null>; color: 'GREEN' | 'AMBER' | 'RED' }[] = [
+  { value: 'Live',        color: 'GREEN' },
+  { value: 'In Progress', color: 'AMBER' },
+  { value: 'Approval',    color: 'AMBER' },
+  { value: 'Declined',    color: 'RED'   },
+  { value: 'Not Live',    color: 'RED'   },
+];
 
 export interface RooftopScored extends Rooftop {
   captureRate: number | null;
@@ -141,7 +173,10 @@ export function parseCSVRow(row: Record<string, string>): Rooftop | null {
     return isNaN(num) ? null : num;
   };
 
+  const teamId = (row['team_id'] || '').trim() || null;
+
   return {
+    teamId,
     enterpriseName: enterprise,
     rooftopName: name,
     agentType,

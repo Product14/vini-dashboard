@@ -10,12 +10,14 @@ import RagLogicPanel from '@/components/RagLogicPanel';
 import AccountTable from '@/components/AccountTable';
 import BoardView from '@/components/BoardView';
 import ImportModal from '@/components/ImportModal';
-import { scoreRooftop } from '@/lib/ragLogic';
-import type { RooftopScored, RagStatus } from '@/lib/ragLogic';
+import { scoreRooftop, rooftopKey } from '@/lib/ragLogic';
+import type { RooftopScored, RagStatus, SalesInboundStatuses, DeploymentStatus, } from '@/lib/ragLogic';
+import { EMPTY_SALES_INBOUND_STATUSES } from '@/lib/ragLogic';
 import { DEFAULT_ROOFTOPS, DEFAULT_LAST_UPDATED } from '@/lib/defaultData';
 
 const STORAGE_KEY = 'vini_rag_data';
 const STORAGE_TS_KEY = 'vini_rag_timestamp';
+const STORAGE_DEPLOY_KEY = 'vini_deployment_statuses';
 
 type ViewMode = 'table' | 'board';
 type GroupBy = 'tofu' | 'outcome' | 'quality';
@@ -23,6 +25,7 @@ type GroupBy = 'tofu' | 'outcome' | 'quality';
 export default function DashboardPage() {
   const [rooftops, setRooftops] = useState<RooftopScored[]>([]);
   const [lastUpdated, setLastUpdated] = useState<string>(DEFAULT_LAST_UPDATED);
+  const [deploymentStatuses, setDeploymentStatuses] = useState<Record<string, SalesInboundStatuses>>({});
   const [showImport, setShowImport] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [boardGroupBy, setBoardGroupBy] = useState<GroupBy>('tofu');
@@ -39,11 +42,28 @@ export default function DashboardPage() {
       if (stored) {
         setRooftops(JSON.parse(stored));
         if (ts) setLastUpdated(ts);
-        return;
+      } else {
+        setRooftops(DEFAULT_ROOFTOPS.map(scoreRooftop));
       }
+    } catch {
+      setRooftops(DEFAULT_ROOFTOPS.map(scoreRooftop));
+    }
+    try {
+      const deploy = localStorage.getItem(STORAGE_DEPLOY_KEY);
+      if (deploy) setDeploymentStatuses(JSON.parse(deploy));
     } catch {}
-    setRooftops(DEFAULT_ROOFTOPS.map(scoreRooftop));
   }, []);
+
+  const handleStatusChange = (key: string, field: keyof SalesInboundStatuses, value: DeploymentStatus) => {
+    setDeploymentStatuses((prev) => {
+      const next = {
+        ...prev,
+        [key]: { ...EMPTY_SALES_INBOUND_STATUSES, ...prev[key], [field]: value },
+      };
+      try { localStorage.setItem(STORAGE_DEPLOY_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   const handleImport = (scored: RooftopScored[], timestamp: string) => {
     setRooftops(scored);
@@ -190,7 +210,12 @@ export default function DashboardPage() {
 
       {/* View */}
       {viewMode === 'table' ? (
-        <AccountTable rooftops={filtered} />
+        <AccountTable
+          rooftops={filtered}
+          showDeploymentCols={activeAgent === 'Sales Inbound'}
+          deploymentStatuses={deploymentStatuses}
+          onStatusChange={handleStatusChange}
+        />
       ) : (
         <BoardView rooftops={filtered} groupBy={boardGroupBy} onGroupByChange={setBoardGroupBy} />
       )}
