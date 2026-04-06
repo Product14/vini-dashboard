@@ -29,13 +29,14 @@ export default function DashboardPage() {
   const [showImport, setShowImport] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [boardGroupBy, setBoardGroupBy] = useState<GroupBy>('tofu');
-  const [activeAgent, setActiveAgent] = useState<string>('ALL');
+  const [activeAgent, setActiveAgent] = useState<string>('Sales Inbound');
   const [accountRagFilter, setAccountRagFilter] = useState<RagStatus | 'ALL'>('ALL');
   const [filters, setFilters] = useState<Filters>({
     search: '', tofu: 'ALL', outcome: 'ALL', quality: 'ALL',
   });
 
   useEffect(() => {
+    // Load rooftop RAG data from localStorage
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       const ts = localStorage.getItem(STORAGE_TS_KEY);
@@ -48,10 +49,27 @@ export default function DashboardPage() {
     } catch {
       setRooftops(DEFAULT_ROOFTOPS.map(scoreRooftop));
     }
-    try {
-      const deploy = localStorage.getItem(STORAGE_DEPLOY_KEY);
-      if (deploy) setDeploymentStatuses(JSON.parse(deploy));
-    } catch {}
+    // Load deployment statuses from Notion API (with localStorage cache fallback)
+    fetch('/api/statuses')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data && Object.keys(data).length > 0) {
+          setDeploymentStatuses(data);
+          try { localStorage.setItem(STORAGE_DEPLOY_KEY, JSON.stringify(data)); } catch {}
+        } else {
+          // Fall back to localStorage cache while API loads
+          try {
+            const cached = localStorage.getItem(STORAGE_DEPLOY_KEY);
+            if (cached) setDeploymentStatuses(JSON.parse(cached));
+          } catch {}
+        }
+      })
+      .catch(() => {
+        try {
+          const cached = localStorage.getItem(STORAGE_DEPLOY_KEY);
+          if (cached) setDeploymentStatuses(JSON.parse(cached));
+        } catch {}
+      });
   }, []);
 
   const handleStatusChange = (key: string, field: keyof SalesInboundStatuses, value: DeploymentStatus) => {
@@ -60,7 +78,20 @@ export default function DashboardPage() {
         ...prev,
         [key]: { ...EMPTY_SALES_INBOUND_STATUSES, ...prev[key], [field]: value },
       };
+      // Optimistic local update
       try { localStorage.setItem(STORAGE_DEPLOY_KEY, JSON.stringify(next)); } catch {}
+      // Find rooftop metadata for Notion record
+      const r = rooftops.find((rt) => rooftopKey(rt) === key);
+      fetch('/api/statuses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rooftopKey: key,
+          rooftopName: r?.rooftopName ?? key,
+          enterprise: r?.enterpriseName ?? '',
+          statuses: next[key],
+        }),
+      }).catch(console.error);
       return next;
     });
   };

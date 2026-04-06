@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import RagBadge, { RAG_TEXT } from './RagBadge';
 import type { RooftopScored, RagStatus, SalesInboundStatuses, DeploymentStatus } from '@/lib/ragLogic';
 import { DEPLOYMENT_STATUS_OPTIONS, EMPTY_SALES_INBOUND_STATUSES, rooftopKey } from '@/lib/ragLogic';
@@ -81,6 +82,8 @@ function StatusCell({
 }
 
 export default function AccountTable({ rooftops, showDeploymentCols = false, deploymentStatuses = {}, onStatusChange }: Props) {
+  const [deployExpanded, setDeployExpanded] = useState(false);
+
   if (rooftops.length === 0) {
     return (
       <div className="text-center py-16 text-slate-400 border border-slate-200 rounded-xl bg-white">
@@ -89,8 +92,9 @@ export default function AccountTable({ rooftops, showDeploymentCols = false, dep
     );
   }
 
-  const tofuColSpan = showDeploymentCols ? 4 + TOFU_DEPLOY_COLS.length : 4;
-  const roiColSpan  = showDeploymentCols ? 3 + ROI_DEPLOY_COLS.length  : 3;
+  const showDeploy = showDeploymentCols && deployExpanded;
+  const tofuColSpan = showDeploy ? 4 + TOFU_DEPLOY_COLS.length : 4;
+  const roiColSpan  = showDeploy ? 3 + ROI_DEPLOY_COLS.length  : 3;
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
@@ -100,14 +104,34 @@ export default function AccountTable({ rooftops, showDeploymentCols = false, dep
             {/* Group header row */}
             <tr className="bg-slate-50 border-b border-slate-200">
               <th className="px-2 py-1 border-r border-slate-200" />
-              <th colSpan={tofuColSpan} className="px-2 py-1 text-[10px] font-bold text-blue-700 uppercase tracking-wider text-center border-r border-slate-200 bg-blue-50">
-                TOFU
+              <th colSpan={tofuColSpan} className="px-2 py-1 border-r border-slate-200 bg-blue-50">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">TOFU</span>
+                  {showDeploymentCols && (
+                    <button
+                      onClick={() => setDeployExpanded((e) => !e)}
+                      className="text-[9px] font-semibold text-blue-500 hover:text-blue-700 cursor-pointer ml-2 whitespace-nowrap"
+                    >
+                      {deployExpanded ? '▲ Hide flags' : '▶ Flags'}
+                    </button>
+                  )}
+                </div>
               </th>
               <th colSpan={2} className="px-2 py-1 text-[10px] font-bold text-purple-700 uppercase tracking-wider text-center border-r border-slate-200 bg-purple-50">
                 Quality
               </th>
-              <th colSpan={roiColSpan} className="px-2 py-1 text-[10px] font-bold text-emerald-700 uppercase tracking-wider text-center bg-emerald-50">
-                ROI
+              <th colSpan={roiColSpan} className="px-2 py-1 bg-emerald-50">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">ROI</span>
+                  {showDeploymentCols && (
+                    <button
+                      onClick={() => setDeployExpanded((e) => !e)}
+                      className="text-[9px] font-semibold text-emerald-500 hover:text-emerald-700 cursor-pointer ml-2 whitespace-nowrap"
+                    >
+                      {deployExpanded ? '▲ Hide flags' : '▶ Flags'}
+                    </button>
+                  )}
+                </div>
               </th>
             </tr>
             {/* Column header row */}
@@ -117,8 +141,8 @@ export default function AccountTable({ rooftops, showDeploymentCols = false, dep
               <th className={`${TH} bg-blue-50/50`}>Leads</th>
               <th className={`${TH} bg-blue-50/50`}>Interactions</th>
               <th className={`${TH} bg-blue-50/50`}>Capture</th>
-              <th className={`${TH} bg-blue-50/50 ${showDeploymentCols ? '' : 'border-r border-slate-200'}`}>RAG</th>
-              {showDeploymentCols && TOFU_DEPLOY_COLS.map((col, i) => (
+              <th className={`${TH} bg-blue-50/50 ${!showDeploy ? 'border-r border-slate-200' : ''}`}>RAG</th>
+              {showDeploy && TOFU_DEPLOY_COLS.map((col, i) => (
                 <th key={col.key} className={`${TH} bg-blue-50/50 ${i === TOFU_DEPLOY_COLS.length - 1 ? 'border-r border-slate-200' : ''}`}>
                   {col.label}
                 </th>
@@ -129,8 +153,8 @@ export default function AccountTable({ rooftops, showDeploymentCols = false, dep
 
               <th className={`${TH} bg-emerald-50/50`}>Appts</th>
               <th className={`${TH} bg-emerald-50/50`}>Rate</th>
-              <th className={`${TH} bg-emerald-50/50 ${showDeploymentCols ? '' : ''}`}>RAG</th>
-              {showDeploymentCols && ROI_DEPLOY_COLS.map((col) => (
+              <th className={`${TH} bg-emerald-50/50`}>RAG</th>
+              {showDeploy && ROI_DEPLOY_COLS.map((col) => (
                 <th key={col.key} className={`${TH} bg-emerald-50/50`}>
                   {col.label}
                 </th>
@@ -162,10 +186,10 @@ export default function AccountTable({ rooftops, showDeploymentCols = false, dep
                   <td className={`${TD} bg-blue-50/20`}>
                     <span className={`font-bold ${RAG_TEXT[r.tofu.status]}`}>{capturePct}</span>
                   </td>
-                  <td className={`${TD} bg-blue-50/20 ${showDeploymentCols ? '' : 'border-r border-slate-100'}`}>
+                  <td className={`${TD} bg-blue-50/20 ${!showDeploy ? 'border-r border-slate-100' : ''}`}>
                     <RagBadge status={r.tofu.status} size="sm" />
                   </td>
-                  {showDeploymentCols && TOFU_DEPLOY_COLS.map((col, i) => (
+                  {showDeploy && TOFU_DEPLOY_COLS.map((col, i) => (
                     <td key={col.key} className={`${TD} bg-blue-50/10 ${i === TOFU_DEPLOY_COLS.length - 1 ? 'border-r border-slate-100' : ''}`}>
                       <StatusCell
                         value={statuses[col.key]}
@@ -190,7 +214,7 @@ export default function AccountTable({ rooftops, showDeploymentCols = false, dep
                   <td className={`${TD} bg-emerald-50/20`}>
                     <RagBadge status={r.outcome.status} size="sm" />
                   </td>
-                  {showDeploymentCols && ROI_DEPLOY_COLS.map((col) => (
+                  {showDeploy && ROI_DEPLOY_COLS.map((col) => (
                     <td key={col.key} className={`${TD} bg-emerald-50/10`}>
                       <StatusCell
                         value={statuses[col.key]}

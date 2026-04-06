@@ -80,7 +80,7 @@ export default function AgentTabs({ rooftops, active, onChange }: Props) {
           rooftops={rooftops.filter((r) => r.agentType === agent.label)}
           isActive={active === agent.label}
           color={agent}
-          onClick={() => onChange(active === agent.label ? 'ALL' : agent.label)}
+          onClick={() => onChange(agent.label)}
         />
       ))}
     </div>
