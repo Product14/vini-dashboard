@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllStatuses, upsertStatus } from '@/lib/notion';
+import { getAllStatuses, upsertStatus } from '@/lib/supabase';
 
 export async function GET() {
   try {
