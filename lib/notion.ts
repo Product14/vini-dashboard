@@ -1,11 +1,18 @@
-import { Client } from '@notionhq/client';
 import type { SalesInboundStatuses, DeploymentStatus } from './ragLogic';
 import { EMPTY_SALES_INBOUND_STATUSES } from './ragLogic';
 
-export const notion = new Client({ auth: process.env.NOTION_TOKEN });
-export const DB_ID = process.env.NOTION_DEPLOY_DB_ID!;
+const TOKEN = process.env.NOTION_TOKEN!;
+const DB_ID = process.env.NOTION_DEPLOY_DB_ID!;
+const NOTION_VERSION = '2022-06-28';
 
-// Notion property name → SalesInboundStatuses key
+function notionHeaders() {
+  return {
+    'Authorization': `Bearer ${TOKEN}`,
+    'Notion-Version': NOTION_VERSION,
+    'Content-Type': 'application/json',
+  };
+}
+
 const PROP_TO_KEY: Record<string, keyof SalesInboundStatuses> = {
   'SmartView':       'smartView',
   'STL':             'stl',
@@ -36,39 +43,42 @@ function pageToStatuses(page: any): SalesInboundStatuses {
 export async function getAllStatuses(): Promise<Record<string, SalesInboundStatuses>> {
   const map: Record<string, SalesInboundStatuses> = {};
   let cursor: string | undefined;
+
   do {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await (notion as any).databases.query({
-      database_id: DB_ID,
-      start_cursor: cursor,
-      page_size: 100,
+    const body: Record<string, unknown> = { page_size: 100 };
+    if (cursor) body.start_cursor = cursor;
+
+    const res = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
+      method: 'POST',
+      headers: notionHeaders(),
+      body: JSON.stringify(body),
     });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Notion query failed: ${res.status} ${err}`);
+    }
+
+    const data = await res.json();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const page of res.results as any[]) {
+    for (const page of data.results as any[]) {
       const key: string = page.properties['Rooftop Key']?.title?.[0]?.plain_text ?? '';
       if (key) map[key] = pageToStatuses(page);
     }
-    cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
+    cursor = data.has_more ? data.next_cursor : undefined;
   } while (cursor);
+
   return map;
 }
 
-export async function upsertStatus(
+function buildProperties(
   rooftopKey: string,
   rooftopName: string,
   enterprise: string,
   statuses: SalesInboundStatuses
-): Promise<void> {
+) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const existing = await (notion as any).databases.query({
-    database_id: DB_ID,
-    filter: { property: 'Rooftop Key', title: { equals: rooftopKey } },
-    page_size: 1,
-  });
-
-  // Build properties as any to avoid Notion SDK's overly strict types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const props: any = {
+  const props: Record<string, any> = {
     'Rooftop Key':  { title: [{ text: { content: rooftopKey } }] },
     'Rooftop Name': { rich_text: [{ text: { content: rooftopName } }] },
     'Enterprise':   { rich_text: [{ text: { content: enterprise } }] },
@@ -77,10 +87,56 @@ export async function upsertStatus(
     const val = statuses[key as keyof SalesInboundStatuses];
     props[propName] = val ? { select: { name: val } } : { select: null };
   }
+  return props;
+}
 
-  if (existing.results.length > 0) {
-    await notion.pages.update({ page_id: existing.results[0].id, properties: props });
+export async function upsertStatus(
+  rooftopKey: string,
+  rooftopName: string,
+  enterprise: string,
+  statuses: SalesInboundStatuses
+): Promise<void> {
+  // Find existing page
+  const queryRes = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
+    method: 'POST',
+    headers: notionHeaders(),
+    body: JSON.stringify({
+      filter: { property: 'Rooftop Key', title: { equals: rooftopKey } },
+      page_size: 1,
+    }),
+  });
+
+  if (!queryRes.ok) {
+    const err = await queryRes.text();
+    throw new Error(`Notion query failed: ${queryRes.status} ${err}`);
+  }
+
+  const queryData = await queryRes.json();
+  const properties = buildProperties(rooftopKey, rooftopName, enterprise, statuses);
+
+  if (queryData.results.length > 0) {
+    const pageId = queryData.results[0].id;
+    const updateRes = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+      method: 'PATCH',
+      headers: notionHeaders(),
+      body: JSON.stringify({ properties }),
+    });
+    if (!updateRes.ok) {
+      const err = await updateRes.text();
+      throw new Error(`Notion update failed: ${updateRes.status} ${err}`);
+    }
   } else {
-    await notion.pages.create({ parent: { database_id: DB_ID }, properties: props });
+    const createRes = await fetch('https://api.notion.com/v1/pages', {
+      method: 'POST',
+      headers: notionHeaders(),
+      body: JSON.stringify({
+        parent: { database_id: DB_ID },
+        properties,
+      }),
+    });
+    if (!createRes.ok) {
+      const err = await createRes.text();
+      throw new Error(`Notion create failed: ${createRes.status} ${err}`);
+    }
   }
 }
