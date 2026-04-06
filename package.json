@@ -8,17 +8,18 @@
     "start": "next start"
   },
   "dependencies": {
+    "@notionhq/client": "^5.16.0",
+    "lucide-react": "^0.400.0",
     "next": "14.2.5",
-    "react": "^18",
-    "react-dom": "^18",
     "papaparse": "^5.4.1",
-    "lucide-react": "^0.400.0"
+    "react": "^18",
+    "react-dom": "^18"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/papaparse": "^5.3.14",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "@types/papaparse": "^5.3.14",
     "autoprefixer": "^10",
     "postcss": "^8",
     "tailwindcss": "^3",
