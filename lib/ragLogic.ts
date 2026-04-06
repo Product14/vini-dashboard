@@ -169,8 +169,16 @@ export function parseCSVRow(row: Record<string, string>): Rooftop | null {
   const n = (key: string) => {
     const v = row[key];
     if (v === '' || v === null || v === undefined) return null;
-    const num = parseFloat(v);
+    // Strip commas (e.g. "1,482") and percent signs (e.g. "7.78%")
+    const cleaned = v.replace(/,/g, '').replace(/%$/, '');
+    const num = parseFloat(cleaned);
     return isNaN(num) ? null : num;
+  };
+
+  const pct = (key: string) => {
+    // CSV stores rates as percentages ("7.78%") — convert to decimal (0.0778)
+    const v = n(key);
+    return v === null ? null : v / 100;
   };
 
   const teamId = (row['team_id'] || '').trim() || null;
@@ -185,7 +193,7 @@ export function parseCSVRow(row: Record<string, string>): Rooftop | null {
     callLeads: n('total_leads_with_calls') ?? 0,
     smsLeads: n('total_leads_with_sms') ?? 0,
     appointments: n('total_appointments') ?? 0,
-    apptRate: n('appointment_booking_rate'),
+    apptRate: pct('appointment_booking_rate'),
     avgScore: n('avg_score_percentage'),
   };
 }
