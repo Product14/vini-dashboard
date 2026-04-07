@@ -32,12 +32,12 @@ const ACCT_BORDER: Record<RagStatus, string> = {
   'N/A': 'border-l-slate-200',
 };
 
-const DEPLOY_BG: Record<string, string> = {
-  'Live':        'bg-green-50 text-green-700',
-  'In Progress': 'bg-amber-50 text-amber-700',
-  'Approval':    'bg-amber-50 text-amber-700',
-  'Declined':    'bg-red-50 text-red-700',
-  'Not Live':    'bg-red-50 text-red-700',
+const DEPLOY_PILL: Record<string, string> = {
+  'Live':        'bg-green-100 text-green-700 border border-green-200',
+  'In Progress': 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  'Approval':    'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  'Declined':    'bg-red-100 text-red-700 border border-red-200',
+  'Not Live':    'bg-red-100 text-red-700 border border-red-200',
 };
 
 const TH = 'px-2 py-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-left whitespace-nowrap';
@@ -65,19 +65,23 @@ function StatusCell({
   value: DeploymentStatus;
   onChange: (v: DeploymentStatus) => void;
 }) {
-  const colorClass = value ? DEPLOY_BG[value] : 'text-slate-300';
+  const pillClass = value ? DEPLOY_PILL[value] : 'bg-slate-100 text-slate-400 border border-slate-200';
   return (
-    <select
-      value={value ?? ''}
-      onChange={(e) => onChange((e.target.value as DeploymentStatus) || null)}
-      className={`text-[10px] font-semibold rounded px-1.5 py-0.5 border-0 outline-none cursor-pointer w-full min-w-[80px] ${colorClass} bg-transparent`}
-      style={{ appearance: 'none' }}
-    >
-      <option value="">—</option>
-      {DEPLOYMENT_STATUS_OPTIONS.map((opt) => (
-        <option key={opt.value} value={opt.value}>{opt.value}</option>
-      ))}
-    </select>
+    <div className="relative inline-block w-full">
+      <select
+        value={value ?? ''}
+        onChange={(e) => onChange((e.target.value as DeploymentStatus) || null)}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+      >
+        <option value="">—</option>
+        {DEPLOYMENT_STATUS_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.value}</option>
+        ))}
+      </select>
+      <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap pointer-events-none ${pillClass}`}>
+        {value ?? '—'}
+      </span>
+    </div>
   );
 }
 
