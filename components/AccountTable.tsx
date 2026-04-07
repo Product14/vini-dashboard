@@ -34,7 +34,7 @@ const ACCT_BORDER: Record<RagStatus, string> = {
 
 const DEPLOY_PILL: Record<string, string> = {
   'Live':        'bg-green-100 text-green-700 border border-green-200',
-  'In Progress': 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  'In Progress': 'bg-orange-100 text-orange-700 border border-orange-200',
   'Approval':    'bg-yellow-100 text-yellow-700 border border-yellow-200',
   'Declined':    'bg-red-100 text-red-700 border border-red-200',
   'Not Live':    'bg-red-100 text-red-700 border border-red-200',
