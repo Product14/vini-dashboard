@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import RagBadge, { RAG_TEXT } from './RagBadge';
 import type { RooftopScored, RagStatus, SalesInboundStatuses, DeploymentStatus } from '@/lib/ragLogic';
 import { DEPLOYMENT_STATUS_OPTIONS, EMPTY_SALES_INBOUND_STATUSES, rooftopKey } from '@/lib/ragLogic';
@@ -32,12 +32,12 @@ const ACCT_BORDER: Record<RagStatus, string> = {
   'N/A': 'border-l-slate-200',
 };
 
-const DEPLOY_PILL: Record<string, string> = {
-  'Live':        'bg-green-100 text-green-700 border border-green-200',
-  'In Progress': 'bg-orange-100 text-orange-700 border border-orange-200',
-  'Approval':    'bg-yellow-100 text-yellow-700 border border-yellow-200',
-  'Declined':    'bg-red-100 text-red-700 border border-red-200',
-  'Not Live':    'bg-red-100 text-red-700 border border-red-200',
+const DEPLOY_PILL_STYLE: Record<string, React.CSSProperties> = {
+  'Live':        { backgroundColor: '#86EFAC', color: '#14532d' },
+  'In Progress': { backgroundColor: '#93C5FD', color: '#1e3a5f' },
+  'Approval':    { backgroundColor: '#FCD34D', color: '#713f12' },
+  'Declined':    { backgroundColor: '#FCA5A5', color: '#7f1d1d' },
+  'Not Live':    { backgroundColor: '#D1D5DB', color: '#374151' },
 };
 
 const TH = 'px-2 py-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-left whitespace-nowrap';
@@ -65,7 +65,7 @@ function StatusCell({
   value: DeploymentStatus;
   onChange: (v: DeploymentStatus) => void;
 }) {
-  const pillClass = value ? DEPLOY_PILL[value] : 'bg-slate-100 text-slate-400 border border-slate-200';
+  const pillStyle = value ? DEPLOY_PILL_STYLE[value] : undefined;
   return (
     <div className="relative inline-block w-full">
       <select
@@ -78,7 +78,10 @@ function StatusCell({
           <option key={opt.value} value={opt.value}>{opt.value}</option>
         ))}
       </select>
-      <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap pointer-events-none ${pillClass}`}>
+      <span
+        className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap pointer-events-none"
+        style={pillStyle ?? { backgroundColor: '#F1F5F9', color: '#94A3B8' }}
+      >
         {value ?? '—'}
       </span>
     </div>
